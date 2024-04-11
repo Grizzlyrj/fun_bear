@@ -25,6 +25,8 @@ Created on Thu Mar 14 12:15:37 2024
 
 # another='9'
 
+print("This is fun")
+
 # print(type(another))
 
 # another=int(another)
