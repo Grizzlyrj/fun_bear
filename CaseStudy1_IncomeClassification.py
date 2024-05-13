@@ -61,6 +61,8 @@ summary_numdata=data_bkup.describe()
 #Getting summary of categorical columns
 
 summary_catdata=data_bkup.describe(include="O") #here O represents object data type
+
+
 print(summary_catdata)
 
 # Frequency of each category
@@ -154,3 +156,53 @@ SalStat = sns.countplot(x='SalStat', data=data_com)
 """  75 % of people's salary status is <=50,000 
      & 25% of people's salary status is > 50,000
 """
+##############  Histogram of Age  #############################
+
+sns.distplot(data_com['age'],kde=False,bins=10)
+
+# People with age 20-45 age are high in frequency
+
+############# Box Plot - Age vs Salary status #################
+
+sns.boxplot(data=data_com,x='SalStat', y='age') # creates boxplot of data
+data_com.groupby('SalStat')['age'].median() # shows median age of both groups
+
+## people with 35-50 age are more likely to earn > 50000 USD p.a
+## people with 25-35 age are more likely to earn <= 50000 USD p.a
+
+##############  Grouped barplot of Jobtype wrt SalStat  #############################
+JobType= sns.countplot(y=data_com['JobType'],hue = 'SalStat', data=data_com)
+
+job_salstat =pd.crosstab(index = data_com["JobType"],columns = data_com['SalStat'],margins=True, normalize='index')  
+round(job_salstat*100,1) # here 1 represents to round the data to atleast 1 decimal point
+
+# margins shows the total value at the end of each row and column
+# normalize converts it into percent values according to each row (i.e index)
+
+##############  Grouped barplot of Edtype wrt SalStat  #############################
+
+Education= sns.countplot(y=data_com[ 'EdType'], hue= 'SalStat', data=data_com)
+edtype_salstat=pd.crosstab(index=data_com['EdType'],columns=data_com['SalStat'], margins=True,normalize='index')
+round(edtype_salstat*100,1)
+
+# margins shows the total value at the end of each row and column
+# normalize converts it into percent values according to each row (i.e index)
+
+##############  Grouped barplot of Occupation wrt SalStat  #############################
+
+occu= sns.countplot(y='occupation', hue='SalStat',data=data_com)
+occu_salstat=pd.crosstab(index=data_com['occupation'],columns=data_com['SalStat'],margins=True,normalize='index')
+round(occu_salstat*100,1)
+data_com.columns
+
+##############  Histogram of Capital gain  #############################
+
+cp=sns.distplot(data_com['capitalgain'],bins=10,kde=False)
+
+##############  Histogram of Capital loss #############################
+
+cl=sns.distplot(data_com['capitalloss'],bins=10,kde=False)
+
+
+
+
