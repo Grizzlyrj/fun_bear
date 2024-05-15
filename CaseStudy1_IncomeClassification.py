@@ -203,6 +203,113 @@ cp=sns.distplot(data_com['capitalgain'],bins=10,kde=False)
 
 cl=sns.distplot(data_com['capitalloss'],bins=10,kde=False)
 
+'''
+Building a classifier model based on avaliable data
+'''
 
+# =============================================================================
+# LOGISTIC REGRESSION
+# =============================================================================
 
+'''
+Here we are gonna create a logistic regression model. Logistic Regression model is a ML
+classification algorithm used to predict the probability of a categorical dependant variable
+'''
 
+# Reindexing the salary status names to 0,1
+'''
+Reindexing because ML algorithm cannot work with categorical data directly
+'''
+data_com['SalStat'].value_counts() #to find count of all values
+
+print(np.unique(data_com['SalStat'])) #to display all unique values
+
+data_com['SalStat']=data_com['SalStat'].map({' less than or equal to 50,000':0,' greater than 50,000':1})
+print(data_com['SalStat'])
+
+'''
+Reindexing using mapping. Map is assigned by using dictionary
+'''
+data_com.info()
+catdummy_data=pd.get_dummies(data=data_com,drop_first=True) # drop_first=True drops the first occuring category of that column
+trialdummy=pd.get_dummies(data=data_com,drop_first=False)
+catdummy_data.info()
+trialdummy.info()
+'''Here getdummies function helps to convert all the categorical variable into dummy variables
+called one hot encoding. It means splitting the column with categorical data into many columns
+depending on the no. of categories present in the column'''
+
+# Convert True/False to 1/0 for all boolean columns
+catdummy_data = catdummy_data.astype(int)
+
+''' Now, we are dividing the columns into 2 types: 'x' for independent variable and 'y' for dependent variables'''
+
+#Storing column names as a list 
+
+column_list=list(catdummy_data.columns)
+print(column_list)
+
+#Separating the input names from data by removing SalStat
+
+noSalStatlist=list(set(column_list)-set(['SalStat']))
+print(noSalStatlist)
+
+#Storing the output values in y
+
+y=catdummy_data['SalStat'].values
+print(y)
+
+# Storing the input values from noSalStat in x
+
+x=catdummy_data[noSalStatlist].values
+print(x)
+
+# Splitting the data into a training set and a testing set using train test split function
+
+''' Training set helps us to build the model and testing set helps us to the test the model on the data.'''
+
+train_x,test_x,train_y,test_y=train_test_split(x,y,test_size=0.3,random_state=0)
+''' here x represents the input values,
+         y represents the output values,
+         test_size represents the proportion of the data set to be included in the test split
+         random_state is the seed used by the RNG so that each and every time you run this line while sampling,
+            same set of samples will be chosen. If random_state is not set, a different set of samples will be 
+            chosen for the analysis everytime.'''
+
+# Make an instance of the Model
+
+logistic=LogisticRegression()
+
+# Fitting the values for x and y
+
+logistic.fit(train_x, train_y)
+logistic.coef_ # gets the coefficients of the logistic regression model
+logistic.intercept_
+
+# Prediction from test data
+
+prediction=logistic.predict(test_x)
+print(prediction) #ideally should only have values 0's and 1's which gives the salary status of the test df
+
+# Confusion matrix
+
+'''Confusion matrix is a table that is used to evaluate the performance of a classification model. Confusion matrix 
+   output gives the no. of correct and incorrect predictions. It will also sum up all the values class-wise'''
+ 
+confusion_matrix=confusion_matrix(test_y,prediction) #the two inputs should be the actual and predicted values
+print(confusion_matrix) 
+''' Here the diagonal values gives the total no of correctly classified samples, while the other two gives the total no of 
+    wrongly classified samples.
+    Now considering the output, 6292 samples correctly predicted the values as less than 50000 and 531 samples incorrectly said its above 50000
+    Meanwhile, 1279 samples correctly predicted the values as more than 50000 and 947 samples incorrectly said its less than 50000 '''
+
+# Calculating the accuracy
+
+''' Using a measur called accuracy, you can find the accuracy score of the model you built '''
+
+accuracy=accuracy_score(test_y, prediction)
+print(accuracy)
+
+# Printing the misclassified values from prediction
+
+print("Miscaluculated samples are %d" % (test_y != prediction).sum()) # % (test_y != prediction) is the condition parameter
