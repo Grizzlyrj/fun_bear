@@ -313,3 +313,140 @@ print(accuracy)
 # Printing the misclassified values from prediction
 
 print("Miscaluculated samples are %d" % (test_y != prediction).sum()) # % (test_y != prediction) is the condition parameter
+
+# =============================================================================
+# LOGISTIC REGRESSION - REMOVING INSIGNIFICANT VARIABLES TO INCREASE ACCURACY
+# =============================================================================
+''' Creating a new logistic model by removing insignificant variables'''
+
+# Reindexing the salary status names to 0,1
+
+'''
+data_com['SalStat']=data_com['SalStat'].map({' less than or equal to 50,000':0,' greater than 50,000':1})
+print(data_com['SalStat'])
+No need since SalStat is already in 0s and 1s
+'''
+data_com.columns
+
+cols=['gender','race', 'nativecountry', 'JobType']
+data_signi=data_com.drop(cols,axis=1)
+
+data_signi=pd.get_dummies(data_signi,drop_first=True)
+
+''' Now follow the exact same procedure as before'''
+
+#Storing column names as a list 
+
+column_list=list(data_signi.columns)
+print(column_list)
+
+#Separating the input names from data by removing SalStat
+
+noSalStatlist=list(set(column_list)-set(['SalStat']))
+print(noSalStatlist)
+
+#Storing the output values in y
+
+y=data_signi['SalStat'].values
+print(y)
+
+# Storing the input values from noSalStat in x
+
+x=data_signi[noSalStatlist].values
+print(x)
+
+# Splitting the data into a training set and a testing set using train test split function
+
+train_x,test_x,train_y,test_y=train_test_split(x,y,test_size=0.3,random_state=0)
+
+# Make an instance of the Model
+
+logistic=LogisticRegression()
+
+# Fitting the values for x and y
+
+logistic.fit(train_x, train_y)
+
+# Prediction from test data
+
+prediction=logistic.predict(test_x)
+
+
+# Calculating the accuracy
+
+accuracy=accuracy_score(test_y, prediction)
+print(accuracy)
+
+''' Here the accuracy dropped even further as we removed insignificant variables'''
+
+# Printing the misclassified values from prediction
+
+print("Miscaluculated samples are %d" % (test_y != prediction).sum())
+
+
+# =============================================================================
+# KNN
+# =============================================================================
+''' Now building the KNN modal classifier'''
+
+# importing the library of KNN
+from sklearn.neighbors import KNeighborsClassifier  
+
+# importing library for plotting
+import matplotlib.pyplot as plt
+
+# Storing the K nearest neighbors classifier
+KNN_classifier=KNeighborsClassifier(n_neighbors=5) #Creating an instance called KNN_classifier with k values = 5 
+''' It considers five neighbours when classifing the data into less than or equal to 50000 and greater than 50000'''
+
+# Fitting the values for x and y
+
+KNN_classifier.fit(train_x,train_y)
+
+# Predicting the test values with model
+
+prediction=KNN_classifier.predict(test_x)
+
+# Performance metric check
+
+confusion_matrix=confusion_matrix(test_y,prediction)
+
+print('\t','Predicted Values')
+print('Original values','\n',confusion_matrix)
+
+# Calculating the accuracy
+
+accuracy_knn=accuracy_score(test_y,prediction)
+print(accuracy_knn)
+
+# Printing the misclassified values from prediction
+
+print("Miscaluculated samples are %d" % (test_y != prediction).sum())
+
+'''Since the above model is based on 5 neighbours, lets us see what no. of neighbours produces the least 
+   miscalcuted values on the KNN classifier'''
+
+# Effect of K value on classifier
+
+miscalculated_sample=[]
+
+# Calculating error for K values between 1 and 20
+for i in range(1,20):
+    knn=KNeighborsClassifier(n_neighbors=i)
+    knn.fit(train_x,train_y)
+    pred_i=knn.predict(test_x)
+    miscalculated_sample.append((test_y!=pred_i).sum())
+    
+print(miscalculated_sample)
+'''O/P is [1723, 1512, 1544, 1469, 1498, 1443, 1469, 1456, 1464, 1430, 1476, 1456, 1457, 1451, 1455, 1442, 1436, 1425, 1444]
+ So, the 19 neighbours produced the least no of miscalculations. Therefore to further increase the accuracy,
+ we can keep n_neighbour as 19 and drop insignificant variables for the KNN classifier. 
+
+Based on the experiments with both the classifiers, KNN classifier produced lesser error than the Regression 
+model on the sample data. 
+'''
+# =============================================================================
+# END OF SCRIPT
+# =============================================================================
+
+    
