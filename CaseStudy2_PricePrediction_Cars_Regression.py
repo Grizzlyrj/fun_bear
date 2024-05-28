@@ -139,3 +139,191 @@ sum(cars_copy['powerPS']<10) #5565 records
 # =============================================================================
 # Beginning the Data cleaning process
 # =============================================================================   
+
+cars_trial=cars_copy[  (cars_copy['yearOfRegistration']<=2018)
+                     & (cars_copy['yearOfRegistration']>=1950)
+                     & (cars_copy['price']>=100)
+                     & (cars_copy['price']<=150000)
+                     & (cars_copy['powerPS']>=10)
+                     & (cars_copy['powerPS']<=500)
+                     ] #6759 records dropped
+
+#Calculating the age of each car by yearOfRegistraion and monthOfRegistration
+'''This process is added to simplify variable reduction'''
+
+#Converting monthOfRegistration to decimal value
+cars_trial.columns
+cars_trial['monthOfRegistration']/=12
+
+#Creating new variable 'Age' by adding yearOfRegistration and monthOfRegistration
+
+cars_trial['Age']=(2018-cars_trial['yearOfRegistration']+cars_trial['monthOfRegistration'])
+cars_trial['Age']=round(cars_trial['Age'],2)
+cars_trial['Age'].describe()
+
+# Dropping yearOfRegistration and monthOfRegistration
+
+'''Since age is introduced, both the others can be dropped to avoid redundancy'''
+
+cars_trial=cars_trial.drop(columns=['monthOfRegistration','yearOfRegistration'],axis=1)
+
+
+# Visualizing parameters 
+
+# Age
+
+sns.distplot(cars_trial['Age']) #Histogram shows reliable info
+sns.boxplot(y=cars_trial['Age']) #Boxplot shows reliable info
+
+# Price
+
+sns.distplot(cars_trial['price']) #Histogram shows reliable info
+sns.boxplot(y=cars_trial['price']) #Boxplot shows reliable info
+
+# PowerPS
+
+sns.distplot(cars_trial['powerPS']) #Histogram shows reliable info
+sns.boxplot(y=cars_trial['powerPS']) #Boxplot shows reliable info
+
+# Visualizing parameters after narrowing working range
+# Age vs price
+
+sns.regplot(data=cars_trial,x='Age',y='price', scatter=True, fit_reg= False)
+
+'''
+Cars priced higher are newer
+With increase in age, price decreases
+However some cars are priced higher with increase in age'''
+
+# powerPS vs price
+
+sns.regplot(data=cars_trial, x='powerPS', y='price',scatter=True, fit_reg=False)
+
+'''Through the graph, an increase in powerPS results in higher price'''
+
+
+
+# Checking if other variables relate to price
+
+cars_trial.columns
+# Variable seller
+
+cars_trial['seller'].value_counts()
+pd.crosstab(cars_trial['seller'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,x='seller')
+
+'''Fewer cars are in commercial. Therefore, variable seller is insignificant for relation'''
+
+# Variable offerType
+
+cars_trial['offerType'].value_counts()
+pd.crosstab(cars_trial['offerType'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,x='offerType')
+
+'''All cars are on offer. Therefore, variable offerType is insignificant for relation'''
+
+# Variable abtest
+
+cars_trial['abtest'].value_counts()
+pd.crosstab(cars_trial['abtest'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,x='abtest')
+'''Equally distributed. Therefore we check the boxplot with price relation'''
+sns.boxplot(data=cars_trial,x='abtest',y='price')
+
+'''The price seems more or less the same for both the abtest types. Therefore, this variable is also insignificant 
+for relation'''
+
+# Variable vehicleType
+
+cars_trial['vehicleType'].value_counts()
+pd.crosstab(cars_trial['vehicleType'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,x='vehicleType')
+'''difference. Therefore, we check the boxplot with price relation'''
+sns.boxplot(data=cars_trial,x='vehicleType',y='price')
+sns.boxplot(data=cars_trial,x='price',y='vehicleType')
+'''Since the price median is different for each type. We find that vehicleType influences the price'''
+
+# Variable gearbox
+
+cars_trial['gearbox'].value_counts()
+pd.crosstab(cars_trial['gearbox'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,x='gearbox')
+sns.boxplot(data=cars_trial,x='gearbox',y='price')
+
+'''gearbox affects price'''
+
+# Variable model
+
+cars_trial['model'].value_counts()
+pd.crosstab(cars_trial['model'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,y='model')
+sns.boxplot(data=cars_trial,y='model',x='price')
+
+'''model affect price.Cars are distributed over many models. Considered in modelling'''
+
+# Variable kilometer
+
+cars_trial['kilometer'].value_counts()
+pd.crosstab(cars_trial['kilometer'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,y='kilometer')
+sns.boxplot(data=cars_trial,y='kilometer',x='price')
+'''boxplot unreadable'''
+cars_trial['kilometer'].describe()
+sns.displot(data=cars_trial,x='kilometer',bins=8, kde=False)
+sns.regplot(data=cars_trial,x='kilometer',y='price', scatter=True,fit_reg=False)
+'''Since different kilometer produce different prices, it is considered for modelling'''
+
+# Variable fuelType
+
+cars_trial['fuelType'].value_counts()
+pd.crosstab(cars_trial['fuelType'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,x='fuelType')
+sns.boxplot(data=cars_trial,y='fuelType',x='price')
+'''fuelType affects price'''
+
+# Variable brand
+
+cars_trial['brand'].value_counts()
+pd.crosstab(cars_trial['brand'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,y='brand')
+sns.boxplot(data=cars_trial,y='brand',x='price')
+'''brand affects price'''
+
+# Variable notRepairedDamage
+
+# yes- car is damaged but not rectified
+# no- car was damaged but has been rectified
+
+cars_trial['notRepairedDamage'].value_counts()
+pd.crosstab(cars_trial['notRepairedDamage'],columns='count', normalize=True)
+sns.countplot(data=cars_trial,y='notRepairedDamage')
+sns.boxplot(data=cars_trial,x='notRepairedDamage',y='price')
+'''As expected, the cars that require the damages to be repaired fall under lower price ranges.
+    Therefore, notRepairedDamage affects price'''
+    
+# From this, we know that everything except abtest,seller and offerType, affects the price.
+
+# =============================================================================
+# Removing insignificant variables
+# =============================================================================    
+
+col=['seller','abtest','offerType']
+cars_trial=cars_trial.drop(columns=col,axis=1)
+cars_relvar=cars_trial.copy()
+
+# =============================================================================
+# Correlation between numerical variables
+# =============================================================================
+
+cars_select=cars_trial.select_dtypes(exclude=[object])
+correlation=cars_select.corr()
+round(correlation,3)
+cars_select.corr().loc[:,'price'].abs().sort_values(ascending=False)[1:]
+'''here, .loc[:,'price'] takes only the first column, i.e, till price
+   .abs() gives the absolute values
+   [1:] skips the first row and displays the rest
+   '''
+# From the above data, only powerPS has more of an inclination to price changes, compared to the other two. But
+# all 3 are still not heavily influenced by the price.
+
+
