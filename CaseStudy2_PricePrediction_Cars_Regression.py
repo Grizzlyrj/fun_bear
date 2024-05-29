@@ -326,4 +326,156 @@ cars_select.corr().loc[:,'price'].abs().sort_values(ascending=False)[1:]
 # From the above data, only powerPS has more of an inclination to price changes, compared to the other two. But
 # all 3 are still not heavily influenced by the price.
 
+# =============================================================================
+# Model Building
+# =============================================================================
 
+"""
+We are going to build a Linear Regression and Random Forest model
+on two sets of data.
+1. Data obtained by omitting rows with any missing value
+2. Data obtained by imputing the missing values 
+"""
+
+# =============================================================================
+# OMITTING MISSING VALUES
+# =============================================================================
+
+cars_omit=cars_trial.dropna(axis=0) #axis=0 cause we want to drop any row that contains missing values.
+
+'''9888 records with missing values dropped/removed'''
+
+# Converting categorical variables to dummy variables
+
+cars_omit=pd.get_dummies(data=cars_omit,drop_first=True)
+
+# Convert True/False to 1/0 for all boolean columns
+
+cars_omit = cars_omit.astype(float)
+
+# =============================================================================
+# IMPORTING NECESSARY LIBRARIES
+# =============================================================================
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+{from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_squared_error
+
+
+# =============================================================================
+# MODEL BUILDING WITH OMITTED DATA
+# =============================================================================
+
+# Separating input and output features (x1=input, y1=output)
+
+x1= cars_omit.drop(['price'], axis='columns', inplace=False) #inplace is false cause we dont want the changes 
+                                                             #to happen in cars_omit
+y1=cars_omit['price']
+
+
+# Plotting the variable price 
+
+'''Here we convert the price into its natural logarithmic value to obtain a bell shaped histogram. 
+   The graph becomes more clearer to interpret then.'''
+
+prices=pd.DataFrame({'1.Before log conversion':y1,'2.After log conversion':np.log(y1)})
+prices.hist()
+
+# Transforming price as a logarithmic value
+
+y1=np.log(y1)
+
+# Splitting data into test and train
+
+x_train, x_test, y_train, y_test= train_test_split(x1, y1, test_size=0.3, random_state=3)
+
+'''Here, test size contains 30% of the data while rest is used for training.
+   random_state is 3 as the same third set of random sample of data while always be used for the train and 
+    test when its been executed'''
+print(x_train.shape, x_test.shape, y_train.shape, y_test.shape)
+
+'''Out: (23018, 300) (9866, 300) (23018,) (9866,)
+    23018/32884=0.699 that is 70% for training
+    9866/32884=0.300 that is 30% for testing
+'''
+# =============================================================================
+# BASELINE MODEL FOR OMITTED DATA
+# =============================================================================
+
+"""
+We are making a base model. The predicted value is basically replaced by using test data mean value
+This is to set a benchmark and to compare with our regression model
+"""
+# finding the mean for test data value
+
+base_pred=np.mean(y_test)
+
+'''We found one base predicted value. Now we have to replecate the base predicted value for all 9866 rows'''
+
+# Repeating same value till length of test data (9866)
+
+base_pred=np.repeat(base_pred,len(y_test))
+
+# finding the RMSE value (Root Mean Square Error)
+
+'''RMSE is the square root of the mean square error. It computes the difference btw test value and predicted value,
+    squares them and divides them by the number of samples. We get the mean square value then (MSE). Then we root
+    the to get RMSE'''
+base_root_mean_square_error=np.sqrt(mean_squared_error(y_test,base_pred))
+
+print(base_root_mean_square_error)
+
+'''This is the benchmark for comparison with other modals. The objective in building future models is to get 
+   an RSME lesser than this.'''
+
+# =============================================================================
+# LINEAR REGRESSION WITH OMITTED DATA
+# =============================================================================
+
+# Setting intercept as True
+
+lgr=LinearRegression(fit_intercept=True)
+
+'''fit_intercept=True: This parameter specifies whether to calculate the intercept for the model. 
+   If set to True, the model will calculate the intercept, meaning it will fit the line such that it does not 
+   necessarily pass through the origin. If set to False, the line will be forced to pass through the origin 
+   (i.e., the intercept is set to 0).'''
+
+# Model
+model_lin=lgr.fit(x_train, y_train)
+
+# Predicting model on test set
+car_prediction_lin=lgr.predict(x_test)
+
+# Computing MSE and RMSE
+lin_mse=mean_squared_error(y_test, car_prediction_lin)
+lin_rmse=np.sqrt(lin_mse)
+print(lin_rmse)
+'''Out: 0.5455481266513825. Theresfore, there is almost a 50% drop from the base prediction error wise '''
+
+# R squared value
+'''The R-squared value, also known as the coefficient of determination, is a statistical measure used to 
+evaluate the goodness of fit of a regression model. It indicates how well the independent variables explain 
+the variability of the dependent variable in the model.  '''
+
+r2_lin_test=model_lin.score(x_test,y_test)
+r2_lin_train=model_lin.score(x_train,y_train)
+
+print(r2_lin_test,r2_lin_train)
+
+# Regression diagnostics- Residual plot analysis
+'''Residual calculates the difference btw the test data and prediction'''
+
+residual=y_test-car_prediction_lin
+sns.regplot(x=car_prediction_lin, y=residual, scatter=True, fit_reg=False)
+residual.describe()
+'''Most of the residuals here are close to 0. Since residuals are errors, its much better to have most or atleast
+   all to be 0 or close to it. Therefore, predicted and actual values are much closer'''
+   
+
+# =============================================================================
+# RANDOM FOREST WITH OMITTED DATA
+# =============================================================================
+
+# Model parameters
