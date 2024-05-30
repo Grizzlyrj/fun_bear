@@ -334,7 +334,7 @@ cars_select.corr().loc[:,'price'].abs().sort_values(ascending=False)[1:]
 We are going to build a Linear Regression and Random Forest model
 on two sets of data.
 1. Data obtained by omitting rows with any missing value
-2. Data obtained by imputing the missing values 
+2. Data obtained by imputing the missing values i.e replacing nan values by the highest occuring value count  
 """
 
 # =============================================================================
@@ -359,7 +359,7 @@ cars_omit = cars_omit.astype(float)
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
-{from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 
 
@@ -479,3 +479,202 @@ residual.describe()
 # =============================================================================
 
 # Model parameters
+
+rf=RandomForestRegressor(n_estimators=100, max_features=None, max_depth=100, min_samples_split=10,
+                         min_samples_leaf=4, random_state=1)
+
+# Model instance
+model_rf=rf.fit(x_train,y_train)
+
+# Predicting model on test set
+cars_prediction_rf=rf.predict(x_test)
+
+# Computing MSE and RMSE
+rf_mse=mean_squared_error(y_test, cars_prediction_rf)
+rf_rmse=np.sqrt(rf_mse)
+print(rf_rmse)
+
+# R squared value
+r2_rf_testscore=model_rf.score(x_test, y_test)
+r2_rf_trainscore=model_rf.score(x_train,y_train)
+print(r2_rf_testscore, r2_rf_trainscore)
+
+'''From this, wrt to omitted data, the random forest model performs much better than linear regression as
+    it is less erroneous'''
+
+# =============================================================================
+# MODEL BUILDING WITH IMPUTTED DATA
+# =============================================================================
+
+'''Now we see how it performs with inputted data'''    
+
+cars_trial.info()
+cars_imput.isnull().sum()
+
+cars_imput=cars_trial.apply(lambda x:x.fillna(x.median()) \
+                  if x.dtype=='float' else \
+                  x.fillna(x.value_counts().index[0]))
+    
+# Converting categorical variables to dummy variables
+
+cars_imput=pd.get_dummies(cars_imput,drop_first=True)
+
+# Convert True/False to 1/0 for all boolean columns
+
+cars_imput = cars_imput.astype(float)
+
+
+# =============================================================================
+# MODEL BUILDING WITH IMPUTED DATA
+# =============================================================================
+
+# Separating input and output features (x2=input, y2=output)
+
+x2= cars_imput.drop(['price'], axis='columns', inplace=False) #inplace is false cause we dont want the changes 
+                                                             #to happen in cars_imput
+y2=cars_imput['price']
+
+
+# Plotting the variable price 
+
+'''Here we convert the price into its natural logarithmic value to obtain a bell shaped histogram. 
+   The graph becomes more clearer to interpret then.'''
+
+prices=pd.DataFrame({'1.Before log conversion':y2,'2.After log conversion':np.log(y2)})
+prices.hist()
+
+# Transforming price as a logarithmic value
+
+y2=np.log(y2)
+
+# Splitting data into test and train
+
+x_train_im, x_test_im, y_train_im, y_test_im= train_test_split(x2, y2, test_size=0.3, random_state=3)
+
+print(x_train_im.shape, x_test_im.shape, y_train_im.shape, y_test_im.shape)
+
+'''Out: (29940, 303) (12832, 303) (29940,) (12832,)
+    29940/42772=0.699 that is 70% for training
+    12832/42772=0.300 that is 30% for testing
+'''
+# =============================================================================
+# BASELINE MODEL FOR OMITTED DATA
+# =============================================================================
+
+"""
+We are making a base model. The predicted value is basically replaced by using test data mean value
+This is to set a benchmark and to compare with our regression model
+"""
+# finding the mean for test data value
+
+base_pred=np.mean(y_test_im)
+
+'''We found one base predicted value. Now we have to replecate the base predicted value for all 12832 rows'''
+
+# Repeating same value till length of test data (9866)
+
+base_pred=np.repeat(base_pred,len(y_test_im))
+
+# finding the RMSE value (Root Mean Square Error)
+
+base_root_mean_square_error_imputted=np.sqrt(mean_squared_error(y_test_im,base_pred))
+
+print(base_root_mean_square_error_imputted)
+
+'''This is the benchmark for comparison with other modals. The objective in building future models is to get 
+   an RSME lesser than this.'''
+
+# =============================================================================
+# LINEAR REGRESSION WITH OMITTED DATA
+# =============================================================================
+
+# Setting intercept as True
+
+lgr_im=LinearRegression(fit_intercept=True)
+
+'''fit_intercept=True: This parameter specifies whether to calculate the intercept for the model. 
+   If set to True, the model will calculate the intercept, meaning it will fit the line such that it does not 
+   necessarily pass through the origin. If set to False, the line will be forced to pass through the origin 
+   (i.e., the intercept is set to 0).'''
+
+# Model
+model_lin_im=lgr_im.fit(x_train_im, y_train_im)
+
+# Predicting model on test set
+car_prediction_lin_im=lgr_im.predict(x_test_im)
+
+# Computing MSE and RMSE
+lin_mse_im=mean_squared_error(y_test_im, car_prediction_lin_im)
+lin_rmse_im=np.sqrt(lin_mse_im)
+print(lin_rmse_im)
+print(lin_rmse)
+'''Out: 6483956449231297. Theresfore, there is almost a 50% drop from the base prediction error wise '''
+
+# R squared value
+
+
+r2_lin_test_im=model_lin_im.score(x_test_im,y_test_im)
+r2_lin_train_im=model_lin_im.score(x_train_im,y_train_im)
+
+print(r2_lin_test_im,r2_lin_train_im)
+print(r2_lin_test,r2_lin_train)
+
+# =============================================================================
+# RANDOM FOREST WITH IMPUTTED DATA
+# =============================================================================
+
+# Model parameters
+
+rf_im=RandomForestRegressor(n_estimators=100, max_features=None, max_depth=100, min_samples_split=10,
+                         min_samples_leaf=4, random_state=1)
+
+# Model instance
+model_rf_im=rf_im.fit(x_train_im,y_train_im)
+
+# Predicting model on test set
+cars_prediction_rf_im=rf_im.predict(x_test_im)
+
+# Computing MSE and RMSE
+rf_mse_im=mean_squared_error(y_test_im, cars_prediction_rf_im)
+rf_rmse_im=np.sqrt(rf_mse_im)
+print(rf_rmse_im)
+print(rf_rmse)
+
+# R squared value
+r2_rf_testscore_im=model_rf_im.score(x_test_im, y_test_im)
+r2_rf_trainscore_im=model_rf_im.score(x_train_im,y_train_im)
+print(r2_rf_testscore, r2_rf_trainscore)
+print(r2_rf_testscore_im, r2_rf_trainscore_im)
+
+'''From this, wrt to imputted data, the random forest model performs much better than linear regression as
+    it is less erroneous'''
+
+# Final output
+
+print("Metrics for models built from data where missing values were omitted\n")
+print("R squared value for train from Linear Regression=  %s"% r2_lin_train)
+print("R squared value for test from Linear Regression=  %s"% r2_lin_test)
+print("R squared value for train from Random Forest=  %s"% r2_rf_trainscore)
+print("R squared value for test from Random Forest=  %s"% r2_rf_testscore)
+print("Base RMSE of model built from data where missing values were omitted= %s"%base_root_mean_square_error)
+print("RMSE value for test from Linear Regression=  %s"% lin_rmse)
+print("RMSE value for test from Random Forest=  %s"% rf_rmse)
+print("\n\n")
+print("Metrics for models built from data where missing values were imputed\n")
+print("R squared value for train from Linear Regression=  %s"% r2_lin_train_im)
+print("R squared value for test from Linear Regression=  %s"% r2_lin_test_im)
+print("R squared value for train from Random Forest=  %s"% r2_rf_trainscore_im)
+print("R squared value for test from Random Forest=  %s"% r2_rf_testscore_im)
+print("Base RMSE of model built from data where missing values were imputed= %s"%base_root_mean_square_error_imputted)
+print("RMSE value for test from Linear Regression=  %s"% lin_rmse_im)
+print("RMSE value for test from Random Forest=  %s"% rf_rmse_im)
+
+
+'''From this case study, we conclude that there is less error from data that omits missing values than imputting
+    and Omitted Random forest regressor proved to be more optimal than the linear or base models.
+    
+    Additionally, Random forest performs a lot better in predicting prices than linear in both cases'''
+    
+# =============================================================================
+# END OF SCRIPT
+# =============================================================================
